@@ -1,9 +1,7 @@
 import numpy as np
 
-# valid characters for input cleaning
 
-
-def populate_valid_chars():
+def gen_valid_chars():
     letters = "abcdefghijklmnopqrstuvwxyz"
     letters += letters.upper()
     numbers = ''.join([str(n) for n in range(10)])
@@ -13,7 +11,6 @@ def populate_valid_chars():
     valid_characters = "".join(sorted(valid_characters))
 
     return valid_characters
-# encoding names for neural network
 
 
 def encode_name_list(list_of_names):
@@ -23,12 +20,12 @@ def encode_name_list(list_of_names):
         output.append(encode_name(name))
     output = [o for o in output if o is not None]
 
-    return np.array(output)
+    return output
 
 
 def encode_name(name, valid_characters=None, max_len=36):
     if not valid_characters:
-        valid_characters = populate_valid_chars()
+        valid_characters = gen_valid_chars()
     if len(name) > max_len:
         return None
     vll = len(valid_characters)
@@ -42,12 +39,12 @@ def encode_name(name, valid_characters=None, max_len=36):
     if i < max_len:
         output += [np.zeros(vll) for i in range(max_len - len(name))]
 
-    return output
+    return np.array(output)
 
 
 def decode_name(input_matrix, valid_characters=None):
     if not valid_characters:
-        valid_characters = populate_valid_chars()
+        valid_characters = gen_valid_chars()
     # vll = len(valid_characters)
     name = ''
     # Todo: could optimise this
@@ -58,7 +55,7 @@ def decode_name(input_matrix, valid_characters=None):
             break
         letter = fz[0][0]
         name += letter
-    
+
     return name
 
 
