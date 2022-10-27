@@ -15,7 +15,7 @@ def build_model(t):
     model.add(Dense(int(tr*tc*0.2), activation="relu"))
     model.add(Dense(int(tr*tc*0.1), activation="relu"))
     model.add(Dense(int(tr*tc*0.05), activation="relu"))
-    model.add(Dense(94, activation="linear"))
+    model.add(Dense(1, activation="linear"))
 
     return model
 
