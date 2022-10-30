@@ -1,11 +1,12 @@
 import numpy as np
+import logging
 
 
 def gen_valid_chars():
     letters = "abcdefghijklmnopqrstuvwxyz"
     letters += letters.upper()
     numbers = ''.join([str(n) for n in range(10)])
-    special = r" !@#$%^&*()_+=-/\',.<>?;:[]{}`~" + '"'
+    special = r" !@#$%^&*()_+=-/\',.<>?;:[]{}`~" + '"' + '\n'
 
     valid_characters = letters + numbers + special
     valid_characters = "".join(sorted(valid_characters))
@@ -13,51 +14,67 @@ def gen_valid_chars():
     return valid_characters
 
 
-def encode_name_list(list_of_names):
-    output = []
-    for name in list_of_names:
-        encoded_name = encode_name(name)
-        output.append(encode_name(name))
-    output = [o for o in output if o is not None]
+def build_coder_decoder(valid_characters):
+    char2idx = dict((c, i) for i, c in enumerate(valid_characters))
+    idx2char = dict((i, c) for i, c in enumerate(valid_characters))
 
-    return output
+    return char2idx, idx2char
 
 
-def encode_name(name, valid_characters=None, max_len=36):
+def make_training_set(data, settings):
+    valid_characters = gen_valid_chars()
+
+    # drop the \n characters TODO: fix this for windows
+    name_string = '\n'.join(data)
+    # name_string = name_string.replace('\n', '#')
+    names = [n[:-1] for n in data]
+
+    # Use longest name as sequence window
+    max_sequence_length = max([len(name) for name in names])
+
+    logging.debug(f'Total indexed characters: {len(valid_characters)}')
+    logging.debug(f'Number of names: {len(names)}')
+    logging.debug(f'Length of name string: {len(name_string)}')
+    logging.debug(f'Length longest name: {max_sequence_length}')
+
+    sequences = []
+    next_chars = []
+
+    for i in range(0, len(name_string) - max_sequence_length, settings.step_length):
+        sequences.append(name_string[i: i + max_sequence_length])
+        next_chars.append(name_string[i + max_sequence_length])
+
+    for i in range(10):
+        logging.debug(
+            f'S=<{sequences[i]}>    C=<{next_chars[i]}>'.replace('\n', ' '))
+
+    return sequences, next_chars
+
+
+def encode_training_set(training_set, valid_characters=None, char2idx=None, idx2char=None):
     if not valid_characters:
         valid_characters = gen_valid_chars()
-    if len(name) > max_len:
-        return None
-    vll = len(valid_characters)
-    output = []
-    for i, c in enumerate(name):
-        ic = valid_characters.index(c)
-        cc = np.zeros(vll)
-        cc[ic] = 1
-        output.append(cc)
+    if not char2idx or not idx2char:
+        char2idx, idx2char = build_coder_decoder(valid_characters)
+    # unpack training set
+    sequences, next_chars = training_set    
 
-    if i < max_len:
-        output += [np.zeros(vll) for i in range(max_len - len(name))]
+    num_sequences = len(sequences)
+    num_chars = len(valid_characters)
+    # TODO: could fail
+    max_sequence_length = len(sequences[0])
 
-    return np.array(output)
+    X = np.zeros((num_sequences, max_sequence_length,
+                 num_chars), dtype=np.bool)
+    Y = np.zeros((num_sequences, num_chars), dtype=np.bool)
 
+    for i, sequence in enumerate(sequences):
+        for j, char in enumerate(sequence):
+            X[i, j, char2idx[char]] = 1
+        
+        Y[i, char2idx[next_chars[i]]] = 1
 
-def decode_name(input_matrix, valid_characters=None):
-    if not valid_characters:
-        valid_characters = gen_valid_chars()
-    # vll = len(valid_characters)
-    name = ''
-    # Todo: could optimise this
-    for v in input_matrix:
-        z = list(zip(sorted(valid_characters), v))
-        fz = list(filter(lambda x: x[1] == 1, z))
-        if fz == []:
-            break
-        letter = fz[0][0]
-        name += letter
-
-    return name
-
+    return X, Y
 
 if __name__ == "__main__":
     test_name = "Bob"

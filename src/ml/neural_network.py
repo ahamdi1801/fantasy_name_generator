@@ -1,84 +1,73 @@
 import keras
 from keras.models import Sequential
-from keras.layers import Dense, Flatten
+from keras.layers import Dense, Flatten, LSTM
 from keras.callbacks import TensorBoard
-from time import time
+from keras.optimizers import RMSprop
+import time
 import numpy as np
 
 
-def build_model(t):
+def build_model(shape, settings):
+    max_sequence_length = shape[1]
+    num_chars = shape[2]
+
     model = Sequential()
-    tr = t.shape[1]
-    tc = t.shape[0]
-    model.add(Dense(tr*tc, input_shape=(tc, tr), activation="relu"))
-    model.add(Flatten())
-    model.add(Dense(int(tr*tc*0.2), activation="relu"))
-    model.add(Dense(int(tr*tc*0.1), activation="relu"))
-    model.add(Dense(int(tr*tc*0.05), activation="relu"))
-    model.add(Dense(1, activation="linear"))
+    model.add(LSTM(settings.latent_dim,
+                   input_shape=(max_sequence_length, num_chars),
+                   recurrent_dropout=settings.dropout_rate))
+    model.add(Dense(units=num_chars, activation='softmax'))
+
+    optimizer = RMSprop(lr=0.01)
+    model.compile(loss='categorical_crossentropy',
+                  optimizer=optimizer)
+
+    model.summary()
 
     return model
 
 
-def compile_model(m):
-    m.compile(loss='mse', optimizer='adam')
-    tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
-    return tensorboard
+def train_model(model, X, Y, settings):
+
+    if settings.load_model:
+        model.load_weights(settings.model_path)
+    else:
+        start = time.time()
+        print('Start training for {} epochs'.format(settings.epochs))
+        history = model.fit(X, Y, epochs=settings.epochs,
+                            batch_size=settings.batch_size, verbose=settings.verbosity)
+        end = time.time()
+        print('Finished training - time elapsed:', (end - start)/60, 'min')
+
+    if settings.store_model:
+        print('Storing model at:', settings.model_path)
+        model.save(settings.model_path)
 
 
-def fit_model(m, training_generator, validation_generator, tensorboard, epochs=10):
-    # TODO: deprecated
-    history = m.fit_generator(
-        generator=training_generator,
-        validation_data=validation_generator,
-        epochs=epochs,
-        callbacks=[tensorboard]
-    )
+def generate_names(model, sequence, char2idx, idx2char, settings):
+    new_names = []
 
-    return history
+    while len(new_names) < settings.gen_amount:
+        x = np.zeros((1, len(sequence), len(idx2char)))
 
+        for i, c in enumerate(sequence):
+            x[0, i, char2idx[c]] = 1
 
-class DataGenerator(keras.utils.Sequence):
-    'Generates data for Keras'
+        probs = model.predict(x, verbose=0)[0]
+        probs /= probs.sum()
+        next_idx = np.random.choice(len(probs), p=probs)   
+        next_char = idx2char[next_idx]   
+        sequence = sequence[1:] + next_char
 
-    def __init__(self, data, input_col, label_col, batch_size=2, shuffle=True, name=""):
-        self.data = data
-        self.batch_size = batch_size
-        self.input_col = input_col
-        self.label_col = label_col
-        self.indecies = [i for i in range(len(data))]
-        self.shuffle = shuffle
-        self.batch_no = 0
-        self.on_epoch_end()
+        if next_char == '\n':
+            gen_name = [name for name in sequence.split('\n')][1]
 
-    def __len__(self):
-        'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.data) / self.batch_size))
+            # Discard all names that are too short
+            if len(gen_name) > 2:
+                # Only allow new and unique names
+                if gen_name not in new_names:
+                    new_names.append(gen_name.capitalize())
 
-    def __getitem__(self, c_index):
-        'Generate one batch of data'
-        # Generate indexes of the batch
-        batch_rows = self.indecies[c_index *
-                                   self.batch_size:(c_index+1)*self.batch_size]
-
-        # Generate data
-        inputs, labels = self.__data_generation(batch_rows)
-
-        return inputs, labels
-
-    def on_epoch_end(self):
-        'Updates indexes after each epoch'
-        if self.shuffle == True:
-            np.random.shuffle(self.indecies)
-
-    def __data_generation(self, rows):
-        input_lst = []
-        label_lst = []
-        for i in rows:
-            input_lst.append(self.data.iloc[i][self.input_col])
-            label_lst.append(self.data.iloc[i][self.label_col])
-        return np.asarray(input_lst), np.asarray(label_lst)
-
+    return new_names
 
 if __name__ == "__main__":
     pass
