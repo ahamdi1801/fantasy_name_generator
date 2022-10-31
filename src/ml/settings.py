@@ -19,7 +19,7 @@ import os
 @dataclass()
 class Settings():
     step_length = 1    # The step length we take to get our samples from our corpus
-    epochs = 50       # Number of times we train on our full data
+    epochs = 5       # Number of times we train on our full data
     batch_size = 32    # Data samples in each training step
     latent_dim = 64    # Size of our LSTM
     dropout_rate = 0.2  # Regularization with dropout

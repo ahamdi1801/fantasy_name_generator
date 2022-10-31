@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import os
 from matplotlib.ticker import MaxNLocator
 
 
@@ -8,5 +9,6 @@ def show_graph(history, name):
     plt.ylabel("Loss")
     plt.xlabel("Epochs")
     plt.legend(["train", "validation"], loc='upper left')
-    plt.savefig(f'./Figures/{name}')
+    p = os.path.join(f'./Figures/{name}')
+    plt.savefig(p)
     plt.show()

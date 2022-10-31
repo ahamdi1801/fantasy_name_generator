@@ -73,7 +73,8 @@ def main(args=sys.argv):
     if not os.path.exists('Output'):
         os.makedirs('Output')
     
-    with open('./Output/' + filename.split('.')[0] + settings.model_path.split('/')[-1].split('.')[0] + '_output.txt', "w+") as output_file:
+    p = os.path.join('./Output/' + filename.split('.')[0] + settings.model_path.split('/')[-1].split('.')[0] + '_output.txt')
+    with open(p, "w+") as output_file:
         for name in generated:
             output_file.write(f"{name}\n")
 
