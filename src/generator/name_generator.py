@@ -4,11 +4,12 @@ import random
 import os
 import numpy as np
 from src.ml.encoding import build_coder_decoder, gen_valid_chars, make_training_set, encode_training_set
-from src.ml.data_class import Data, gen_settings
+from src.ml.settings import gen_settings
 from src.ml.neural_network import build_model, train_model, generate_names
+from src.plot.plotter import show_graph
 
 # tensorflow no GPU warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Logging
 logging.basicConfig()
@@ -58,11 +59,23 @@ def main(args=sys.argv):
     logging.debug(Y.shape)
 
     model = build_model(X.shape, settings)
-    train_model(model, X, Y, settings)
+    history = train_model(model, X, Y, settings)
+    if history and settings.plot_loss_function:
+        if not os.path.exists('Figures'):
+            os.makedirs('Figures')
+        show_graph(history, settings.model_path.split('/')[-1].split('.')[0])
 
     sequence = sequences[-1][1:] + '\n'
     generated = generate_names(model, sequence, char2idx, idx2char, settings)
     logging.debug(generated)
+
+    # Save names
+    if not os.path.exists('Output'):
+        os.makedirs('Output')
+    
+    with open('./Output/' + filename.split('.')[0] + settings.model_path.split('/')[-1].split('.')[0] + '_output.txt', "w+") as output_file:
+        for name in generated:
+            output_file.write(f"{name}\n")
 
 if __name__ == "__main__":
     pass

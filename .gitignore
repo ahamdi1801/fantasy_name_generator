@@ -131,3 +131,7 @@ dmypy.json
 data/*.txt
 data/*.db
 data/*.json
+*.png
+Output/*.txt
+*.backup
+*.h5

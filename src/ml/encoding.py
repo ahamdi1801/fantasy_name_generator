@@ -77,6 +77,4 @@ def encode_training_set(training_set, valid_characters=None, char2idx=None, idx2
     return X, Y
 
 if __name__ == "__main__":
-    test_name = "Bob"
-    name_encoding = np.array(encode_name(test_name))
-    decode_name(name_encoding)
+    pass

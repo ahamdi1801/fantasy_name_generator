@@ -1,7 +1,6 @@
 import keras
 from keras.models import Sequential
-from keras.layers import Dense, Flatten, LSTM
-from keras.callbacks import TensorBoard
+from keras.layers import Dense, LSTM
 from keras.optimizers import RMSprop
 import time
 import numpy as np
@@ -27,6 +26,7 @@ def build_model(shape, settings):
 
 
 def train_model(model, X, Y, settings):
+    history = None
 
     if settings.load_model:
         model.load_weights(settings.model_path)
@@ -41,6 +41,12 @@ def train_model(model, X, Y, settings):
     if settings.store_model:
         print('Storing model at:', settings.model_path)
         model.save(settings.model_path)
+
+    if history:
+        return history
+    else:
+        return None
+
 
 
 def generate_names(model, sequence, char2idx, idx2char, settings):
