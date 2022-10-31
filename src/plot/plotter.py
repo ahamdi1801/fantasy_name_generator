@@ -9,6 +9,6 @@ def show_graph(history, name):
     plt.ylabel("Loss")
     plt.xlabel("Epochs")
     plt.legend(["train", "validation"], loc='upper left')
-    p = os.path.join(f'./Figures/{name}')
+    p = os.path.realpath(f'./Figures/{name}')
     plt.savefig(p)
     plt.show()
